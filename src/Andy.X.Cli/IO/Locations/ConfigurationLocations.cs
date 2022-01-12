@@ -4,6 +4,7 @@
     {
         public static string GetRootDirectory()
         {
+            // this location should be configured from the client.
             return AppDomain.CurrentDomain.BaseDirectory;
         }
 
