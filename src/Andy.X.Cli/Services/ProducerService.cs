@@ -20,6 +20,8 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -57,6 +59,8 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;

@@ -2,7 +2,7 @@
   "profiles": {
     "Andy.X.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "tenant default"
+      "commandLineArgs": "authorization tenant --tenant \"default\""
     }
   }
 }

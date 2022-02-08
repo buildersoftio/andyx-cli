@@ -100,16 +100,62 @@ app.AddCommand("tenant", ([Argument()] string? tenant,
 
 app.AddSubCommand("authorization", x =>
 {
-    x.AddCommand("tenant", (string tenant, DateTime expireDate) =>
+    x.AddCommand("tenant", ([Option(Description = "Tenant name")] string tenant,
+        [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
+        [Option(Description = "Create or read Tenant Token, unset is read, set is create")] bool? create) =>
     {
-        Console.WriteLine("Tenant Authorization is called");
-        Console.WriteLine(tenant);
-        Console.WriteLine(expireDate);
+        if (create.HasValue == true)
+        {
+            if (expireDate.HasValue != true)
+                expireDate = DateTime.Now.AddYears(2);
+
+            TenantService.PostTenantToken(tenant, expireDate.Value);
+        }
+        else
+            TenantService.GetTenantTokens(tenant);
     });
-    x.AddCommand("component", (string tenant, string product, string component, DateTime expireDate) =>
+    x.AddCommand("component", ([Option(Description = "Tenant name")] string tenant,
+        [Option(Description = "Product name")] string product,
+        [Option(Description = "Component name")] string component,
+        [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
+        [Option(Description = "Name of the token, example which app will use")] string? name,
+        [Option(Description = "Descriptoon of the token")] string? description,
+        [Option(Description = "Can this token works with consumers, default is true")] bool? canConsume,
+        [Option(Description = "Can this token works with producers, default is true")] bool? canProduce,
+        [Option(Description = "To whom this token is issued")] string? issueFor,
+        [Option(Description = "Create or read Component Token, unset is read, set is create")] bool? create) =>
     {
-        Console.WriteLine("Component Authorization is called");
-        Console.WriteLine(tenant);
+        // check default values first
+        if (create.HasValue == true)
+        {
+            if (expireDate.HasValue != true)
+                expireDate = DateTime.Now.AddYears(2);
+            if (name == null)
+                name = "";
+            if (description == null)
+                description = "";
+            if (canConsume.HasValue != true)
+                canConsume = true;
+            if (canProduce.HasValue != true)
+                canProduce = true;
+            if (issueFor == null)
+                issueFor = "";
+
+            ComponentService.PostComponentToken(tenant, product, component, new ComponentToken()
+            {
+                CanConsume = canConsume.Value,
+                CanProduce = canProduce.Value,
+                ExpireDate = expireDate.Value,
+                Description = description,
+                Name = name,
+                IsActive = true,
+                IssuedDate = DateTime.Now,
+                IssuedFor = issueFor,
+                Token = "",
+            });
+        }
+        else
+            ComponentService.GetComponentTokens(tenant, product, component);
     });
 }).WithDescription("Read and Create Tenants").WithAliases("auth");
 

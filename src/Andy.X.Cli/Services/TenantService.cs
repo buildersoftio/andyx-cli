@@ -16,6 +16,8 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -53,6 +55,8 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -90,6 +94,8 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
 
                 var settings = JsonConvert.SerializeObject(tenantSettings);
                 var bodyRequest = new StringContent(settings, Encoding.UTF8, "application/json");
@@ -108,6 +114,86 @@ namespace Andy.X.Cli.Services
                     var table = new ConsoleTable("STATUS", "ERROR");
 
                     table.AddRow(httpResponseMessage.StatusCode, content);
+                    table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+
+        }
+
+        public static void PostTenantToken(string tenant, DateTime expireDate)
+        {
+            var node = NodeService.GetNode();
+
+            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/tokens";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
+
+                var settings = JsonConvert.SerializeObject(expireDate);
+                var bodyRequest = new StringContent(settings, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage httpResponseMessage = client.PostAsync(request, bodyRequest).Result;
+                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine($"{content}");
+                    Console.WriteLine($"-----------------------------------------------------------------------");
+                    Console.WriteLine("");
+                }
+                else
+                {
+                    var table = new ConsoleTable("STATUS", "ERROR");
+
+                    table.AddRow(httpResponseMessage.StatusCode, content);
+                    table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+        }
+
+        public static void GetTenantTokens(string tenant)
+        {
+            var node = NodeService.GetNode();
+
+            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/tokens";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
+
+                HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
+                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var table = new ConsoleTable("ID", "TENANT", "TOKEN", "IS_ACTIVE", "EXPIRE_DATE", "ISSUED_FOR", "ISSUED_DATE");
+                    //List<string> list = content.JsonToObject<List<string>>();
+                    List<TenantToken> list = JsonConvert.DeserializeObject<List<TenantToken>>(content);
+
+                    int k = 0;
+                    foreach (var item in list)
+                    {
+                        k++;
+                        table.AddRow(k, tenant, item.Token, item.IsActive, item.ExpireDate, item.IssuedFor, item.IssuedDate);
+                    }
                     table.Write();
                 }
             }
