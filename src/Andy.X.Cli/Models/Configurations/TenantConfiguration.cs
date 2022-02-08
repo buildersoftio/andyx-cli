@@ -21,7 +21,6 @@
         public TenantLogging Logging { get; set; }
 
         public bool EnableAuthorization { get; set; }
-        public List<TenantToken> Tokens { get; set; }
 
         // Split tenants by certificates will not be possible with version two
         public string CertificatePath { get; set; }
@@ -32,7 +31,6 @@
             EnableEncryption = false;
 
             EnableAuthorization = false;
-            Tokens = new List<TenantToken>();
 
             EnableGeoReplication = false;
             Logging = TenantLogging.ERROR_ONLY;

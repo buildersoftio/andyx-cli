@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Andy.X.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "tenant default"
+    }
+  }
+}

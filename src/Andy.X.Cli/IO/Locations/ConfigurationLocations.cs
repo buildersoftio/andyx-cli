@@ -13,6 +13,11 @@
             return Path.Combine(GetRootDirectory(), "config");
         }
 
+        public static string GetNodeConfigurationFile()
+        {
+            return Path.Combine(ConfigDirectory(), "node.json");
+        }
+
         public static string GetTenantsConfigurationFile()
         {
             return Path.Combine(ConfigDirectory(), "tenants.json");

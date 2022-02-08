@@ -1,77 +1,206 @@
-﻿using Andy.X.Cli.App;
+﻿using Andy.X.Cli.Models.Configurations;
+using Andy.X.Cli.Services;
+using Cocona;
+using ConsoleTables;
 
-namespace Andy.X.Cli
+var builder = CoconaApp.CreateBuilder();
+var app = builder.Build();
+
+app.AddSubCommand("node", x =>
 {
-    internal class Program
+    x.AddCommand("connect", (
+        [Option(Description = "Url of Andy X Node, default value is 'https://localhost:6541'")] string url,
+        [Option('u', Description = "Username of Andy X Node, default is admin")] string? username,
+        [Option('p', Description = "Password of Andy X Node, default is admin")] string? password) =>
     {
-        static void Main(string[] args)
+
+        if (username == null)
+            username = "";
+        if (password == null)
+            password = "";
+        var isConnected = NodeService.AddNode(url, username, password);
+        if (isConnected)
         {
-            if (args.Length == 0)
-            {
-                Help.ShowHelpContent();
-                return;
-            }
-            switch (args[0])
-            {
+            Console.WriteLine();
+            Console.WriteLine($"Node '{url}' is registered");
 
-                case "-help":
-                    App.Help.ShowHelpContent();
-                    break;
-                // ------------------------------------------
-
-                case "-version":
-                case "-ver":
-                    App.Help.ShowVersionContent();
-                    break;
-                // ------------------------------------------
-
-                case "-auth":
-                    Console.WriteLine("Authorization goes here.");
-                    break;
-                // ------------------------------------------
-
-                case "-tenant":
-                    Tenants.AnalyseTenant(args);
-                    break;
-                // ------------------------------------------
-
-                case "-product":
-                    Products.AnalyseProduct(args);
-                    break;
-                // ------------------------------------------
-
-                case "-component":
-                    Components.AnalyseComponent(args);
-                    break;
-                // ------------------------------------------
-
-                case "-topic":
-                    Console.WriteLine("Topic goes here.");
-                    break;
-                // ------------------------------------------
-
-                case "-consumer":
-                    Console.WriteLine("Consumer goes here.");
-                    break;
-                // ------------------------------------------
-
-                case "-producer":
-                    Console.WriteLine("Producer goes here.");
-                    break;
-                // ------------------------------------------
-
-                default:
-                    break;
-            }
+            var table = new ConsoleTable("ID", "NODE_URL", "USERNAME", "PASSWORD");
+            var node = NodeService.GetNode();
+            table.AddRow(1, node.NodeUrl, node.Username, node.Password);
+            table.Write();
         }
-        // examples how andyx-cli will look like from dev point of view
-        // TBD: if there are different ides
+        else
+        {
+            Console.WriteLine();
+            Console.WriteLine($"Something went wrong! Node '{url}' is not registered.");
+        }
 
-        // andyx-cli -auth -get -tenant=default -digitalsignature={string_optional}
-        // andyx-cli -tenant -add -name="tenantName" -digitalSignature="string_optional"
-        // andyx-cli -topic -add/-edit/-view -details="tenant/product/component/{topic_name}" -persistent/nonpersistent
-        // andyx-cli -consumer -tenant=default -product=default -component=default -topic={topic_name} -name={consumerName} -type=exclusive
-        // andyx-cli -producer -tenant=default -product=default -component=default -topic={topic_name} -jsoncontent="{json}"
+    }).WithDescription("Connect to a node");
+
+    x.AddCommand("list", () =>
+    {
+        var table = new ConsoleTable("ID", "NODE_URL", "USERNAME", "PASSWORD");
+        var node = NodeService.GetNode();
+        table.AddRow(1, node.NodeUrl, node.Username, node.Password);
+        table.Write();
+
+    }).WithDescription("Read node details");
+});
+
+app.AddCommand("tenant", ([Argument()] string? tenant,
+    [Option(Description = "Digital Signature, a unique signature to generate tokes")] string? digitalSignature,
+    [Option(Description = "Allow Product Creation, default is true")] bool? allowProductCreation,
+    [Option(Description = "Enable Message Encryption in rest and in motion, default is false")] bool? enableEncryption,
+    [Option(Description = "Enable GeoReplication, default is false")] bool? enableGeoReplication,
+    [Option(Description = "Enable Authorization, default is false")] bool? enableAuthorization,
+    [Option(Description = "Certificate Location")] string? certificatePath,
+    [Option(Description = "Logging Level, default is ALL")] TenantLogging? logging,
+    [Option(Description = "Create or read Tenant, unset is read, set is create")] bool? create) =>
+{
+    if (tenant == null)
+    {
+        TenantService.GetTenants();
+        return;
+    }
+    if (tenant != null && create.HasValue != true)
+    {
+        TenantService.GetTenant(tenant);
+        return;
     }
 
-}
+    //create
+    if (allowProductCreation.HasValue != true)
+        allowProductCreation = true;
+    if (enableEncryption.HasValue != true)
+        enableEncryption = false;
+    if (enableGeoReplication.HasValue != true)
+        enableGeoReplication = false;
+    if (enableAuthorization.HasValue != true)
+        enableAuthorization = false;
+    if (digitalSignature == null)
+        digitalSignature = "KWDjwhAndyjp370qwetM2DFS43BuilderSoft";
+    if (certificatePath == null)
+        certificatePath = "";
+    if (logging.HasValue != true)
+        logging = TenantLogging.ALL;
+
+    TenantService.PostTenant(tenant, new Andy.X.Cli.Models.Configurations.TenantSettings()
+    {
+        AllowProductCreation = allowProductCreation.Value,
+        EnableEncryption = enableEncryption.Value,
+        EnableGeoReplication = enableGeoReplication.Value,
+        EnableAuthorization = enableAuthorization.Value,
+        DigitalSignature = digitalSignature,
+        Logging = Andy.X.Cli.Models.Configurations.TenantLogging.ALL,
+        CertificatePath = certificatePath,
+    });
+
+
+}).WithDescription("Read and Create Tenants").WithAliases("t");
+
+app.AddSubCommand("authorization", x =>
+{
+    x.AddCommand("tenant", (string tenant, DateTime expireDate) =>
+    {
+        Console.WriteLine("Tenant Authorization is called");
+        Console.WriteLine(tenant);
+        Console.WriteLine(expireDate);
+    });
+    x.AddCommand("component", (string tenant, string product, string component, DateTime expireDate) =>
+    {
+        Console.WriteLine("Component Authorization is called");
+        Console.WriteLine(tenant);
+    });
+}).WithDescription("Read and Create Tenants").WithAliases("auth");
+
+app.AddCommand("product", (string tenant, [Argument] string? product, bool? create) =>
+{
+    if (product == null)
+    {
+        ProductService.GetProducts(tenant);
+        return;
+    }
+    if (create == true)
+    {
+        Console.WriteLine("Create product not implemented");
+        return;
+    }
+
+    ProductService.GetProduct(tenant, product);
+
+}).WithDescription("Read and Create Products").WithAliases("p");
+
+app.AddCommand("component", (string tenant, string product, [Argument] string? component, bool? create) =>
+{
+    if (component == null)
+    {
+        ComponentService.GetComponents(tenant, product);
+        return;
+    }
+    if (create == true)
+    {
+        Console.WriteLine("Create product not implemented");
+        return;
+    }
+
+    ComponentService.GetComponent(tenant, product, component);
+}).WithDescription("Read and Create Components").WithAliases("c");
+
+app.AddCommand("topic", (string tenant, string product, string component, [Argument] string? topic, bool? create) =>
+{
+    if (topic == null)
+    {
+        TopicService.GetTopics(tenant, product, component);
+        return;
+    }
+    if (create == true)
+    {
+        Console.WriteLine("Create product not implemented");
+        return;
+    }
+
+    TopicService.GetTopic(tenant, product, component, topic);
+}).WithDescription("Read and Create Topics");
+
+
+app.AddCommand("consumer", ([Argument()] string? consumer) =>
+{
+    if (consumer == null)
+        ConsumerService.GetConsumers();
+    else
+        ConsumerService.GetConsumer(consumer);
+
+}).WithDescription("Read consumers detail");
+
+app.AddCommand("producer", ([Argument()] string? producer) =>
+{
+    if (producer == null)
+        ProducerService.GetProducers();
+    else
+        ProducerService.GetProducer(producer);
+}).WithDescription("Read producers detail");
+
+
+app.AddCommand("build", ([Argument] string app) =>
+{
+    Console.WriteLine("not implemented");
+}).WithDescription("Build Andy X Extensions and Plugins");
+
+app.AddCommand("restore", ([Argument] string app) =>
+{
+    Console.WriteLine("not implemented");
+}).WithDescription("Restore Andy X Extensions and Plugins");
+
+
+app.AddCommand("pack", ([Argument] string app, string outputLocation) =>
+{
+    Console.WriteLine("not implemented");
+}).WithDescription("Pack Andy X Extensions and Plugins");
+
+app.AddCommand("push", ([Argument] string app, [Argument] string outputLocation, string? apiKey) =>
+{
+    Console.WriteLine(app);
+    Console.WriteLine("Push");
+}).WithDescription("Push Andy X Extensions and Plugins to Andy X Hub");
+
+app.Run();

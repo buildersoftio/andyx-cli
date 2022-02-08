@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 
 namespace Andy.X.Cli.Utilities.Extensions
 {
@@ -33,6 +28,7 @@ namespace Andy.X.Cli.Utilities.Extensions
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 IgnoreReadOnlyProperties = true,
+                PropertyNameCaseInsensitive = true,
                 MaxDepth = 64
             }));
         }
@@ -43,6 +39,7 @@ namespace Andy.X.Cli.Utilities.Extensions
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 IgnoreReadOnlyProperties = true,
+                
                 MaxDepth = 64
             }));
         }
