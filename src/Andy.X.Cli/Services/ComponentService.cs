@@ -121,7 +121,7 @@ namespace Andy.X.Cli.Services
             }
         }
 
-        public static void PostComponentToken(string tenant, string product, string component,ComponentToken componentToken)
+        public static void PostComponentToken(string tenant, string product, string component, ComponentToken componentToken)
         {
             var node = NodeService.GetNode();
 
@@ -162,6 +162,78 @@ namespace Andy.X.Cli.Services
             }
         }
 
+        public static void PostComponentRetention(string tenant, string product, string component, ComponentRetention retention)
+        {
+            var node = NodeService.GetNode();
+
+            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/retention";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
+
+                var settings = JsonConvert.SerializeObject(retention);
+                var bodyRequest = new StringContent(settings, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage httpResponseMessage = client.PostAsync(request, bodyRequest).Result;
+                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine($"{content}");
+                    Console.WriteLine($"-----------------------------------------------------------------------");
+                    Console.WriteLine("");
+                }
+                else
+                {
+                    var table = new ConsoleTable("STATUS", "ERROR");
+
+                    table.AddRow(httpResponseMessage.StatusCode, content);
+                    table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+        }
+
+        public static void GetComponentRetention(string tenant, string product, string component)
+        {
+            var node = NodeService.GetNode();
+
+            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/retention";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
+                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
+
+                HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
+                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var table = new ConsoleTable("ID", "NAME", "RETENTION_TIME_IN_MINUTES", "STATUS");
+                    var result = JsonConvert.DeserializeObject<ComponentRetention>(content);
+
+                    table.AddRow("1", result.Name, result.RetentionTimeInMinutes, "ACTIVE");
+                    table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+        }
 
     }
 }

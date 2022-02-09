@@ -209,6 +209,37 @@ app.AddCommand("topic", (string tenant, string product, string component, [Argum
 }).WithDescription("Read and Create Topics");
 
 
+app.AddSubCommand("retention", x =>
+{
+    x.AddCommand("component", ([Option(Description = "Tenant name")] string tenant,
+        [Option(Description = "Product name")] string product,
+        [Argument(Description = "Component name")] string component,
+        [Option(Description = "Retention Policy Name, default is 'default'")] string? name,
+        [Option(Description = "Retention Time limit in minutes, default is -1, -1 is never")] long? time,
+        bool? create) =>
+    {
+        if (create.HasValue == true)
+        {
+            if (name == null)
+                name = "default";
+            if (time.HasValue != true)
+                time = -1;
+
+            ComponentService.PostComponentRetention(tenant, product, component, new ComponentRetention()
+            {
+                Name = name,
+                RetentionTimeInMinutes = time.Value
+            });
+        }
+        else
+            ComponentService.GetComponentRetention(tenant, product, component);
+    });
+
+}).WithDescription("Read and Create Tenants").WithAliases("auth");
+
+
+
+
 app.AddCommand("consumer", ([Argument()] string? consumer) =>
 {
     if (consumer == null)
@@ -225,6 +256,9 @@ app.AddCommand("producer", ([Argument()] string? producer) =>
     else
         ProducerService.GetProducer(producer);
 }).WithDescription("Read producers detail");
+
+
+
 
 
 app.AddCommand("build", ([Argument] string app) =>

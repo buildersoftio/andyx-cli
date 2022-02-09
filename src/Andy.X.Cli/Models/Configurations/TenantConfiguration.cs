@@ -85,6 +85,9 @@
         public bool EnableAuthorization { get; set; }
         public List<ComponentToken> Tokens { get; set; }
 
+        public ComponentRetention RetentionPolicy { get; set; }
+
+
 
         public ComponentSettings()
         {
@@ -93,6 +96,19 @@
             EnableAuthorization = false;
 
             Tokens = new List<ComponentToken>();
+            RetentionPolicy = new ComponentRetention();
+        }
+    }
+
+    public class ComponentRetention
+    {
+        public string Name { get; set; }
+        public long RetentionTimeInMinutes { get; set; }
+
+        public ComponentRetention()
+        {
+            Name = "default";
+            RetentionTimeInMinutes = -1;
         }
     }
 
