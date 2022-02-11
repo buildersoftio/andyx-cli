@@ -1,11 +1,7 @@
 ﻿using Andy.X.Cli.Models;
+using Andy.X.Cli.Utilities.Extensions;
 using ConsoleTables;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Andy.X.Cli.Services
 {
@@ -20,8 +16,7 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
-                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
-                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
+                client.AddBasicAuthorizationHeader(node);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -59,8 +54,7 @@ namespace Andy.X.Cli.Services
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
-                client.DefaultRequestHeaders.Add("x-andyx-node-username", node.Username);
-                client.DefaultRequestHeaders.Add("x-andyx-node-password", node.Password);
+                client.AddBasicAuthorizationHeader(node);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
