@@ -62,7 +62,7 @@ namespace Andy.X.Cli.Services
                 {
                     var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "ID", "PRODUCER_NAME");
                     var producerDetail = JsonConvert.DeserializeObject<Producer>(content);
-                    table.AddRow(producerDetail.Tenant, producerDetail.Product, producerDetail.Component, producerDetail.Tenant, producerDetail.Id, producerDetail.ProducerName);
+                    table.AddRow(producerDetail.Tenant, producerDetail.Product, producerDetail.Component, producerDetail.Topic, producerDetail.Id, producerDetail.ProducerName);
                     table.Write();
                 }
                 else

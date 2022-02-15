@@ -62,7 +62,7 @@ namespace Andy.X.Cli.Services
                 {
                     var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "ID", "CONSUMER_NAME", "CONNECTIONS", "CURRENT_CONNECTION_INDEX", "SUBSCRIPTION_TYPE", "INITIAL_POSITION");
                     var consumerDetail = JsonConvert.DeserializeObject<Consumer>(content);
-                    table.AddRow(consumerDetail.Tenant, consumerDetail.Product, consumerDetail.Component, consumerDetail.Tenant, consumerDetail.Id, consumerDetail.ConsumerName,
+                    table.AddRow(consumerDetail.Tenant, consumerDetail.Product, consumerDetail.Component, consumerDetail.Topic, consumerDetail.Id, consumerDetail.ConsumerName,
                         consumerDetail.Connections.Count, consumerDetail.CurrentConnectionIndex, consumerDetail.SubscriptionType, consumerDetail.ConsumerSettings.InitialPosition);
                     table.Write();
                 }
