@@ -101,9 +101,24 @@ app.AddCommand("tenant", ([Argument()] string? tenant,
 app.AddSubCommand("authorization", x =>
 {
     x.AddCommand("tenant", ([Option(Description = "Tenant name")] string tenant,
+        [Option(Description = "Tenant token")] string? token,
         [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
-        [Option(Description = "Create or read Tenant Token, unset is read, set is create")] bool? create) =>
+        [Option(Description = "Create or read Tenant Token, unset is read, set is create")] bool? create,
+        [Option(Description = "Revoke tenant token, if is set token should provide the token")] bool? revoke) =>
     {
+
+        if (revoke.HasValue == true)
+        {
+            if (token == "" || token == null)
+            {
+                Console.WriteLine("Error, try --help to check how to use token revocation");
+                return;
+            }
+            // execute revoke endpint
+            TenantService.DeleteTenantToken(tenant, token);
+            return;
+        }
+
         if (create.HasValue == true)
         {
             if (expireDate.HasValue != true)
@@ -115,6 +130,7 @@ app.AddSubCommand("authorization", x =>
             TenantService.GetTenantTokens(tenant);
     });
     x.AddCommand("component", ([Option(Description = "Tenant name")] string tenant,
+        [Option(Description = "Consumer token")] string? token,
         [Option(Description = "Product name")] string product,
         [Option(Description = "Component name")] string component,
         [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
@@ -123,8 +139,23 @@ app.AddSubCommand("authorization", x =>
         [Option(Description = "Can this token works with consumers, default is true")] bool? canConsume,
         [Option(Description = "Can this token works with producers, default is true")] bool? canProduce,
         [Option(Description = "To whom this token is issued")] string? issueFor,
-        [Option(Description = "Create or read Component Token, unset is read, set is create")] bool? create) =>
+        [Option(Description = "Create or read Component Token, unset is read, set is create")] bool? create,
+        [Option(Description = "Revoke tenant token, if is set token should provide the token")] bool? revoke) =>
     {
+
+        if (revoke.HasValue == true)
+        {
+            if (token == "" || token == null)
+            {
+                Console.WriteLine("Error, try --help to check how to use token revocation");
+                return;
+            }
+
+            ComponentService.DeleteComponentToken(tenant, product, component, token);
+
+            return;
+        }
+
         // check default values first
         if (create.HasValue == true)
         {

@@ -209,5 +209,41 @@ namespace Andy.X.Cli.Services
             }
 
         }
+
+        public static void DeleteTenantToken(string tenant, string token)
+        {
+            var node = NodeService.GetNode();
+
+            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/tokens/{token}/revoke";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.AddBasicAuthorizationHeader(node);
+
+                HttpResponseMessage httpResponseMessage = client.DeleteAsync(request).Result;
+                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var table = new ConsoleTable("ID", "TENANT", "TOKEN", "RESULT");
+                    //List<string> list = content.JsonToObject<List<string>>();
+                    table.AddRow("1", tenant, token, content);
+                    table.Write();
+                }
+                else
+                {
+                    var table = new ConsoleTable("ID", "RESULT");
+                    table.AddRow("1", content);
+                    table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+        }
     }
 }
