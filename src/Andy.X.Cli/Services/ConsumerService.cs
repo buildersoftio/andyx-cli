@@ -60,10 +60,10 @@ namespace Andy.X.Cli.Services
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "ID", "CONSUMER_NAME", "CONNECTIONS", "CURRENT_CONNECTION_INDEX", "SUBSCRIPTION_TYPE", "INITIAL_POSITION");
+                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "ID", "NAME", "CONNECTIONS", "EXT_CONNECTIONS", "CURRENT_CONNECTION_INDEX", "IS_LOCAL", "SUBSCRIPTION_TYPE", "INITIAL_POSITION");
                     var consumerDetail = JsonConvert.DeserializeObject<Consumer>(content);
                     table.AddRow(consumerDetail.Tenant, consumerDetail.Product, consumerDetail.Component, consumerDetail.Topic, consumerDetail.Id, consumerDetail.ConsumerName,
-                        consumerDetail.Connections.Count, consumerDetail.CurrentConnectionIndex, consumerDetail.SubscriptionType, consumerDetail.ConsumerSettings.InitialPosition);
+                        consumerDetail.Connections.Count, consumerDetail.ExternalConnections.Count, consumerDetail.CurrentConnectionIndex, consumerDetail.IsLocal, consumerDetail.SubscriptionType, consumerDetail.ConsumerSettings.InitialPosition);
                     table.Write();
                 }
                 else

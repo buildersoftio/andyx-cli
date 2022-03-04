@@ -60,9 +60,9 @@ namespace Andy.X.Cli.Services
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "ID", "PRODUCER_NAME");
+                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "ID", "PRODUCER_NAME", "IS_LOCAL");
                     var producerDetail = JsonConvert.DeserializeObject<Producer>(content);
-                    table.AddRow(producerDetail.Tenant, producerDetail.Product, producerDetail.Component, producerDetail.Topic, producerDetail.Id, producerDetail.ProducerName);
+                    table.AddRow(producerDetail.Tenant, producerDetail.Product, producerDetail.Component, producerDetail.Topic, producerDetail.Id, producerDetail.ProducerName, producerDetail.IsLocal);
                     table.Write();
                 }
                 else

@@ -8,9 +8,11 @@
         public string Topic { get; set; }
 
         public List<string> Connections { get; set; }
+        public List<string> ExternalConnections { get; set; }
 
         // This property is used to send to the next shared consumer. (This property will replace the random)
         public int CurrentConnectionIndex { get; set; }
+        public bool IsLocal { get; set; }
 
         public Guid Id { get; set; }
         public string ConsumerName { get; set; }
@@ -21,7 +23,11 @@
         public Consumer()
         {
             Connections = new List<string>();
+            ExternalConnections = new List<string>();
             ConsumerSettings = new ConsumerSettings();
+
+            // is local -> flag if consumer is conencted to this node
+            IsLocal = true;
         }
     }
 

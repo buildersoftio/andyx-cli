@@ -3,7 +3,11 @@ using Andy.X.Cli.Services;
 using Cocona;
 using ConsoleTables;
 
-var builder = CoconaApp.CreateBuilder();
+var builder = CoconaApp.CreateBuilder(configureOptions: options =>
+{
+    options.EnableShellCompletionSupport = true;
+});
+
 var app = builder.Build();
 
 app.AddSubCommand("node", x =>
