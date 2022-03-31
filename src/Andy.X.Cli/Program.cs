@@ -211,6 +211,18 @@ app.AddCommand("product", (string tenant, [Argument] string? product, bool? crea
 
 }).WithDescription("Read and Create Products").WithAliases("p");
 
+app.AddCommand("storage", ([Argument] string? storage) =>
+{
+    if (storage == null)
+    {
+        StorageService.GetStorages();
+        return;
+    }
+    StorageService.GetStorageDetails(storage);
+
+
+}).WithDescription("Read Storages");
+
 app.AddCommand("component", (string tenant, string product, [Argument] string? component, bool? create) =>
 {
     if (component == null)
