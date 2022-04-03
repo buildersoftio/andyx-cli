@@ -139,7 +139,7 @@ app.AddSubCommand("authorization", x =>
         [Option(Description = "Component name")] string component,
         [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
         [Option(Description = "Name of the token, example which app will use")] string? name,
-        [Option(Description = "Descriptoon of the token")] string? description,
+        [Option(Description = "Description of the token")] string? description,
         [Option(Description = "Can this token works with consumers, default is true")] bool? canConsume,
         [Option(Description = "Can this token works with producers, default is true")] bool? canProduce,
         [Option(Description = "To whom this token is issued")] string? issueFor,
@@ -166,7 +166,7 @@ app.AddSubCommand("authorization", x =>
             if (expireDate.HasValue != true)
                 expireDate = DateTime.Now.AddYears(2);
             if (name == null)
-                name = "";
+                name = "default";
             if (description == null)
                 description = "";
             if (canConsume.HasValue != true)
@@ -174,7 +174,7 @@ app.AddSubCommand("authorization", x =>
             if (canProduce.HasValue != true)
                 canProduce = true;
             if (issueFor == null)
-                issueFor = "";
+                issueFor = "default";
 
             ComponentService.PostComponentToken(tenant, product, component, new ComponentToken()
             {
@@ -192,7 +192,7 @@ app.AddSubCommand("authorization", x =>
         else
             ComponentService.GetComponentTokens(tenant, product, component);
     });
-}).WithDescription("Read and Create Tenants").WithAliases("auth");
+}).WithDescription("Create or revoke Tenant and Component Tokens").WithAliases("auth");
 
 app.AddCommand("product", (string tenant, [Argument] string? product, bool? create) =>
 {
@@ -221,7 +221,7 @@ app.AddCommand("storage", ([Argument] string? storage) =>
     StorageService.GetStorageDetails(storage);
 
 
-}).WithDescription("Read Storages");
+}).WithDescription("Read Storages and Storage Details");
 
 app.AddCommand("component", (string tenant, string product, [Argument] string? component, bool? create) =>
 {
@@ -294,7 +294,7 @@ app.AddCommand("consumer", ([Argument()] string? consumer) =>
     else
         ConsumerService.GetConsumer(consumer);
 
-}).WithDescription("Read consumers detail");
+}).WithDescription("Read Consumers details");
 
 app.AddCommand("producer", ([Argument()] string? producer) =>
 {
@@ -302,7 +302,7 @@ app.AddCommand("producer", ([Argument()] string? producer) =>
         ProducerService.GetProducers();
     else
         ProducerService.GetProducer(producer);
-}).WithDescription("Read producers detail");
+}).WithDescription("Read Producers details");
 
 
 
