@@ -49,7 +49,7 @@ app.AddSubCommand("node", x =>
         table.Write();
 
     }).WithDescription("Read node details");
-});
+}).WithDescription("Connect and read node details");
 
 app.AddCommand("tenant", ([Argument()] string? tenant,
     [Option(Description = "Digital Signature, a unique signature to generate tokes")] string? digitalSignature,
