@@ -134,7 +134,7 @@ app.AddSubCommand("authorization", x =>
             TenantService.GetTenantTokens(tenant);
     });
     x.AddCommand("component", ([Option(Description = "Tenant name")] string tenant,
-        [Option(Description = "Consumer token")] string? token,
+        [Option(Description = "Component token")] string? token,
         [Option(Description = "Product name")] string product,
         [Option(Description = "Component name")] string component,
         [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
@@ -211,14 +211,17 @@ app.AddCommand("product", (string tenant, [Argument] string? product, bool? crea
 
 }).WithDescription("Read and Create Products").WithAliases("p");
 
-app.AddCommand("storage", ([Argument] string? storage) =>
+app.AddCommand("storage", ([Argument] string? storage, bool stats) =>
 {
     if (storage == null)
     {
         StorageService.GetStorages();
         return;
     }
-    StorageService.GetStorageDetails(storage);
+    if (stats == true)
+        StorageService.GetStorageStats(storage);
+    else
+        StorageService.GetStorageDetails(storage);
 
 
 }).WithDescription("Read Storages and Storage Details");
@@ -287,19 +290,24 @@ app.AddSubCommand("retention", x =>
 
 
 
-app.AddCommand("consumer", ([Argument()] string? consumer) =>
+app.AddCommand("consumer", ([Argument()] string? consumer, bool stats) =>
 {
     if (consumer == null)
         ConsumerService.GetConsumers();
+    if (stats == true)
+        ConsumerService.GetConsumerStats(consumer);
     else
         ConsumerService.GetConsumer(consumer);
 
 }).WithDescription("Read Consumers details");
 
-app.AddCommand("producer", ([Argument()] string? producer) =>
+app.AddCommand("producer", ([Argument()] string? producer, bool stats) =>
 {
     if (producer == null)
         ProducerService.GetProducers();
+
+    if (stats == true)
+        ProducerService.GetProducerStats(producer);
     else
         ProducerService.GetProducer(producer);
 }).WithDescription("Read Producers details");

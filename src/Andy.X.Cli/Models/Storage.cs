@@ -16,10 +16,13 @@ namespace Andy.X.Cli.Models
         public int AgentMaxNumber { get; set; }
         public int AgentMinNumber { get; set; }
 
+        public StorageMetrics StorageMetrics { get; set; }
+
 
         public Storage()
         {
             Agents = new ConcurrentDictionary<string, Agent>();
+            StorageMetrics = new StorageMetrics();
         }
     }
 
@@ -41,6 +44,24 @@ namespace Andy.X.Cli.Models
         public Agent()
         {
             AgentId = Guid.NewGuid();
+        }
+    }
+
+    public class StorageMetrics
+    {
+        public long InRate { get; set; }
+        public long OutRate { get; set; }
+
+        public long InThroughput { get; set; }
+        public long OutThroughput { get; set; }
+
+        public StorageMetrics()
+        {
+            InRate = 0;
+            OutRate = 0;
+
+            InThroughput = 0;
+            OutThroughput = 0;
         }
     }
 }

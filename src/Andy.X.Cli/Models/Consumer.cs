@@ -20,6 +20,12 @@
 
         public ConsumerSettings ConsumerSettings { get; set; }
 
+        public DateTime ConnectedDate { get; set; }
+        public long CountMessagesConsumedSinceConnected { get; set; }
+        public long CountMessagesAcknowledgedSinceConnected { get; set; }
+        public long CountMessagesUnacknowledgedSinceConnected { get; set; }
+
+
         public Consumer()
         {
             Connections = new List<string>();

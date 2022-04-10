@@ -69,7 +69,7 @@ namespace Andy.X.Cli.Services
                     var table = new ConsoleTable("KEY", "VALUE");
                     var storage = JsonConvert.DeserializeObject<Storage>(content);
 
-                    table.AddRow("ID", storage.StorageId);
+                    table.AddRow("ID", storage!.StorageId);
                     table.AddRow("NAME", storage.StorageName);
                     table.AddRow("TYPE_OF_CONNECTION", "SHARDING");
                     table.AddRow("STATUS", storage.StorageStatus.ToString());
@@ -95,6 +95,56 @@ namespace Andy.X.Cli.Services
                     var table = new ConsoleTable("STATUS", "ERROR");
                     table.AddRow(httpResponseMessage.StatusCode.ToString(), content);
                     table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+        }
+
+        public static void GetStorageStats(string storageName)
+        {
+            var node = NodeService.GetNode();
+
+            string request = $"{node.NodeUrl}api/v1/storages/{storageName}";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+
+                bool stop = false;
+                Console.CancelKeyPress += delegate
+                {
+                    stop = true;
+                };
+
+                client.AddBasicAuthorizationHeader(node);
+                while (true)
+                {
+                    Thread.Sleep(1000);
+                    HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
+                    string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                    if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        Console.Clear();
+                        var table = new ConsoleTable("TIME", "STORAGE", "IN_RATE", "OUT_RATE", "IN_THROUGHTPUT", "OUT_THROUGHTPUT");
+                        var storage = JsonConvert.DeserializeObject<Storage>(content);
+                        table.AddRow(DateTime.Now.ToString("HH:mm:ss"), storageName, storage!.StorageMetrics.InRate, storage.StorageMetrics.OutRate, storage.StorageMetrics.InThroughput, storage.StorageMetrics.OutThroughput);
+                        table.Write();
+                    }
+                    else
+                    {
+                        var table = new ConsoleTable("STATUS", "ERROR");
+                        table.AddRow(httpResponseMessage.StatusCode.ToString(), content);
+                        table.Write();
+                        break;
+                    }
+                    if (stop == true)
+                        break;
                 }
             }
             catch (Exception)
