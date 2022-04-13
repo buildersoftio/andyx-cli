@@ -101,6 +101,7 @@ namespace Andy.X.Cli.Services
                 };
                 while (true)
                 {
+                    Thread.Sleep(1000);
                     HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                     string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                     if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
@@ -108,7 +109,7 @@ namespace Andy.X.Cli.Services
                         Console.Clear();
                         var table = new ConsoleTable("TIME", "TENANT", "PRODUCT", "COMPONENT", "TOPIC", "CONSUMER", "MESSAGE_CONSUMED", "MESSAGE_ACKNOWLEDGED", "MESSAGE_UNACKNOWLEDGED");
                         var consumerDetail = JsonConvert.DeserializeObject<Consumer>(content);
-                        table.AddRow(DateTime.Now.ToString("HH:mm:ss"), consumerDetail.Tenant, consumerDetail.Product, consumerDetail.Component, consumerDetail.Topic, consumerDetail.ConsumerName,
+                        table.AddRow(DateTime.Now.ToString("HH:mm:ss"), consumerDetail!.Tenant, consumerDetail.Product, consumerDetail.Component, consumerDetail.Topic, consumerDetail.ConsumerName,
                             consumerDetail.CountMessagesConsumedSinceConnected, consumerDetail.CountMessagesAcknowledgedSinceConnected, consumerDetail.CountMessagesUnacknowledgedSinceConnected);
                         table.Write();
                     }

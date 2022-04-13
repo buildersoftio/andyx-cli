@@ -21,7 +21,7 @@
 		<PackageOutputPath>./package</PackageOutputPath>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Version>0.10.0-beta</Version>
+		<Version>0.11.0-beta</Version>
 
 	</PropertyGroup>
 

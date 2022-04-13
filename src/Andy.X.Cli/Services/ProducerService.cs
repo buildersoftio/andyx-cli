@@ -101,6 +101,7 @@ namespace Andy.X.Cli.Services
 
                 while (true)
                 {
+                    Thread.Sleep(1000);
                     HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                     string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                     if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
