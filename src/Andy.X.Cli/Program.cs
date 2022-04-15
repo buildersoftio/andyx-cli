@@ -258,6 +258,27 @@ app.AddCommand("topic", (string tenant, string product, string component, [Argum
     TopicService.GetTopic(tenant, product, component, topic);
 }).WithDescription("Read and Create Topics");
 
+app.AddCommand("lineage", (string tenant, string? product, string? component, string? topic) =>
+{
+    if (product != null && component != null && topic != null)
+    {
+        StreamLineageService.GetStreamLineage(tenant, product, component, topic);
+        return;
+    }
+
+    if (product != null && component != null)
+    {
+        StreamLineageService.GetStreamLineage(tenant, product, component);
+        return;
+    }
+    if (product != null)
+    {
+        StreamLineageService.GetStreamLineage(tenant, product);
+        return;
+    }
+    StreamLineageService.GetStreamLineage(tenant);
+
+}).WithDescription("Visualize Stream Lineage, show list of producers and consumers connected to topics");
 
 app.AddSubCommand("retention", x =>
 {
