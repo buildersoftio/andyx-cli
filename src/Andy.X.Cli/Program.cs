@@ -306,7 +306,7 @@ app.AddSubCommand("retention", x =>
             ComponentService.GetComponentRetention(tenant, product, component);
     });
 
-}).WithDescription("Read and Create Tenants").WithAliases("auth");
+}).WithDescription("Read and update Retention Periods for messages").WithAliases("auth");
 
 
 
