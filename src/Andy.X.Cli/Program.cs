@@ -1,7 +1,15 @@
 ﻿using Andy.X.Cli.Models.Configurations;
 using Andy.X.Cli.Services;
+using Buildersoft.Andy.X.Model.Entities.Core.Components;
+using Buildersoft.Andy.X.Model.Entities.Core.Producers;
+using Buildersoft.Andy.X.Model.Entities.Core.Products;
+using Buildersoft.Andy.X.Model.Entities.Core.Subscriptions;
+using Buildersoft.Andy.X.Model.Entities.Core.Tenants;
+using Buildersoft.Andy.X.Model.Entities.Core.Topics;
 using Cocona;
 using ConsoleTables;
+using Microsoft.Extensions.Hosting;
+using System.Diagnostics;
 
 var builder = CoconaApp.CreateBuilder(configureOptions: options =>
 {
@@ -14,14 +22,13 @@ app.AddSubCommand("node", x =>
 {
     x.AddCommand("connect", (
         [Option(Description = "Url of Andy X Node, default value is 'https://localhost:6541'")] string url,
-        [Option('u', Description = "Username of Andy X Node, default is admin")] string? username,
-        [Option('p', Description = "Password of Andy X Node, default is admin")] string? password) =>
+        [Option('u', Description = "Username of Andy X Node, default is 'admin'")] string? username,
+        [Option('p', Description = "Password of Andy X Node, default is 'admin'")] string? password) =>
     {
 
-        if (username == null)
-            username = "";
-        if (password == null)
-            password = "";
+        username ??= "admin";
+        password ??= "admin";
+
         var isConnected = NodeService.AddNode(url, username, password);
         if (isConnected)
         {
@@ -41,322 +48,674 @@ app.AddSubCommand("node", x =>
 
     }).WithDescription("Connect to a node");
 
-    x.AddCommand("list", () =>
+    x.AddCommand("show", () =>
     {
         var table = new ConsoleTable("ID", "NODE_URL", "USERNAME", "PASSWORD");
         var node = NodeService.GetNode();
-        table.AddRow(1, node.NodeUrl, node.Username, node.Password);
+        table.AddRow(1, node.NodeUrl, node.Username, "**********");
         table.Write();
 
     }).WithDescription("Read node details");
 }).WithDescription("Connect and read node details");
 
 app.AddCommand("tenant", ([Argument()] string? tenant,
-    [Option(Description = "Digital Signature, a unique signature to generate tokes")] string? digitalSignature,
-    [Option(Description = "Allow Product Creation, default is true")] bool? allowProductCreation,
-    [Option(Description = "Enable Message Encryption in rest and in motion, default is false")] bool? enableEncryption,
-    [Option(Description = "Enable GeoReplication, default is false")] bool? enableGeoReplication,
-    [Option(Description = "Enable Authorization, default is false")] bool? enableAuthorization,
-    [Option(Description = "Certificate Location")] string? certificatePath,
-    [Option(Description = "Logging Level, default is ALL")] TenantLogging? logging,
-    [Option(Description = "Create or read Tenant, unset is read, set is create")] bool? create) =>
+    [Option(Description = "If his property is set, you will interact with tenant settings")] bool? settings,
+    [Option(Description = "Allow product automatic creation from clients, default is 'true'")] bool? allowProductCreation,
+    [Option(Description = "Enable encryption of data at rest and in motion, default is 'false'")] bool? enableEncryption,
+    [Option(Description = "Enable Authorization, default is 'false'")] bool? enableAuthorization,
+    [Option(Description = "Create or read Tenant, unset is read, set is create")] bool? create,
+    [Option(Description = "If this property is set it will update the tenant settings, make sure to update all settings you want to update")] bool? update) =>
 {
-    if (tenant == null)
+    if (tenant == null && settings.HasValue != true && create.HasValue != true && update.HasValue != true)
     {
         TenantService.GetTenants();
         return;
     }
-    if (tenant != null && create.HasValue != true)
+
+    if (tenant != null && create.HasValue != true && settings.HasValue != true && update.HasValue != true)
     {
         TenantService.GetTenant(tenant);
         return;
     }
 
-    //create
+    if (tenant != null && create.HasValue != true && settings == true && update.HasValue != true)
+    {
+        TenantService.GetTenantSettings(tenant);
+        return;
+    }
+
+    // create or update
     if (allowProductCreation.HasValue != true)
         allowProductCreation = true;
     if (enableEncryption.HasValue != true)
         enableEncryption = false;
-    if (enableGeoReplication.HasValue != true)
-        enableGeoReplication = false;
     if (enableAuthorization.HasValue != true)
         enableAuthorization = false;
-    if (digitalSignature == null)
-        digitalSignature = "KWDjwhAndyjp370qwetM2DFS43BuilderSoft";
-    if (certificatePath == null)
-        certificatePath = "";
-    if (logging.HasValue != true)
-        logging = TenantLogging.ALL;
 
-    TenantService.PostTenant(tenant, new Andy.X.Cli.Models.Configurations.TenantSettings()
+    if (create == true && update.HasValue != true)
     {
-        AllowProductCreation = allowProductCreation.Value,
-        EnableEncryption = enableEncryption.Value,
-        EnableGeoReplication = enableGeoReplication.Value,
-        EnableAuthorization = enableAuthorization.Value,
-        DigitalSignature = digitalSignature,
-        Logging = Andy.X.Cli.Models.Configurations.TenantLogging.ALL,
-        CertificatePath = certificatePath,
-    });
+        TenantService.PostTenant(tenant!, new TenantSettings()
+        {
+            IsProductAutomaticCreationAllowed = allowProductCreation.Value,
+            IsEncryptionEnabled = enableEncryption.Value,
+            IsAuthorizationEnabled = enableAuthorization.Value,
+        });
+        return;
+    }
+
+    if (create.HasValue != true && update == true)
+    {
+        TenantService.PutTenantSettings(tenant!, new TenantSettings()
+        {
+            IsProductAutomaticCreationAllowed = allowProductCreation.Value,
+            IsEncryptionEnabled = enableEncryption.Value,
+            IsAuthorizationEnabled = enableAuthorization.Value,
+        });
+        return;
+    }
 
 
-}).WithDescription("Read and Create Tenants").WithAliases("t");
 
-app.AddSubCommand("authorization", x =>
+}).WithDescription("Create and read tenants").WithAliases("t");
+
+app.AddCommand("product", ([Argument()] string? product, string tenant,
+    [Option(Description = "If his property is set, you will interact with product settings")] bool? settings,
+    [Option(Description = "Enable Authorization, default is 'false'")] bool? enableAuthorization,
+    [Option(Description = "Create or read Product, unset is read, set is create")] bool? create,
+    [Option(Description = "If this property is set it will update the product settings, make sure to update all settings you want to update")] bool? update) =>
 {
-    x.AddCommand("tenant", ([Option(Description = "Tenant name")] string tenant,
-        [Option(Description = "Tenant token")] string? token,
-        [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
-        [Option(Description = "Create or read Tenant Token, unset is read, set is create")] bool? create,
-        [Option(Description = "Revoke tenant token, if is set token should provide the token")] bool? revoke) =>
-    {
-
-        if (revoke.HasValue == true)
-        {
-            if (token == "" || token == null)
-            {
-                Console.WriteLine("Error, try --help to check how to use token revocation");
-                return;
-            }
-            // execute revoke endpint
-            TenantService.DeleteTenantToken(tenant, token);
-            return;
-        }
-
-        if (create.HasValue == true)
-        {
-            if (expireDate.HasValue != true)
-                expireDate = DateTime.Now.AddYears(2);
-
-            TenantService.PostTenantToken(tenant, expireDate.Value);
-        }
-        else
-            TenantService.GetTenantTokens(tenant);
-    });
-    x.AddCommand("component", ([Option(Description = "Tenant name")] string tenant,
-        [Option(Description = "Component token")] string? token,
-        [Option(Description = "Product name")] string product,
-        [Option(Description = "Component name")] string component,
-        [Option(Description = "Date when token expires, default is 2 years starting from now")] DateTime? expireDate,
-        [Option(Description = "Name of the token, example which app will use")] string? name,
-        [Option(Description = "Description of the token")] string? description,
-        [Option(Description = "Can this token works with consumers, default is true")] bool? canConsume,
-        [Option(Description = "Can this token works with producers, default is true")] bool? canProduce,
-        [Option(Description = "To whom this token is issued")] string? issueFor,
-        [Option(Description = "Create or read Component Token, unset is read, set is create")] bool? create,
-        [Option(Description = "Revoke tenant token, if is set token should provide the token")] bool? revoke) =>
-    {
-
-        if (revoke.HasValue == true)
-        {
-            if (token == "" || token == null)
-            {
-                Console.WriteLine("Error, try --help to check how to use token revocation");
-                return;
-            }
-
-            ComponentService.DeleteComponentToken(tenant, product, component, token);
-
-            return;
-        }
-
-        // check default values first
-        if (create.HasValue == true)
-        {
-            if (expireDate.HasValue != true)
-                expireDate = DateTime.Now.AddYears(2);
-            if (name == null)
-                name = "default";
-            if (description == null)
-                description = "";
-            if (canConsume.HasValue != true)
-                canConsume = true;
-            if (canProduce.HasValue != true)
-                canProduce = true;
-            if (issueFor == null)
-                issueFor = "default";
-
-            ComponentService.PostComponentToken(tenant, product, component, new ComponentToken()
-            {
-                CanConsume = canConsume.Value,
-                CanProduce = canProduce.Value,
-                ExpireDate = expireDate.Value,
-                Description = description,
-                Name = name,
-                IsActive = true,
-                IssuedDate = DateTime.Now,
-                IssuedFor = issueFor,
-                Token = "",
-            });
-        }
-        else
-            ComponentService.GetComponentTokens(tenant, product, component);
-    });
-}).WithDescription("Create or revoke Tenant and Component Tokens").WithAliases("auth");
-
-app.AddCommand("product", (string tenant, [Argument] string? product, bool? create) =>
-{
-    if (product == null)
+    if (product == null && settings.HasValue != true && create.HasValue != true && update.HasValue != true)
     {
         ProductService.GetProducts(tenant);
         return;
     }
-    if (create == true)
+
+    if (product != null && create.HasValue != true && settings.HasValue != true && update.HasValue != true)
     {
-        Console.WriteLine("Create product not implemented");
+        ProductService.GetProduct(tenant, product);
         return;
     }
 
-    ProductService.GetProduct(tenant, product);
-
-}).WithDescription("Read and Create Products").WithAliases("p");
-
-app.AddCommand("storage", ([Argument] string? storage, bool stats) =>
-{
-    if (storage == null)
+    if (product != null && create.HasValue != true && settings == true && update.HasValue != true)
     {
-        StorageService.GetStorages();
+        ProductService.GetProductSettings(tenant, product);
         return;
     }
-    if (stats == true)
-        StorageService.GetStorageStats(storage);
-    else
-        StorageService.GetStorageDetails(storage);
 
+    // create or update
+    if (enableAuthorization.HasValue != true)
+        enableAuthorization = false;
 
-}).WithDescription("Read Storages and Storage Details");
+    if (product != null && create == true && update.HasValue != true)
+    {
+        ProductService.PostProduct(tenant, product!, new ProductSettings()
+        {
+            IsAuthorizationEnabled = enableAuthorization!.Value,
+        });
+    }
 
-app.AddCommand("component", (string tenant, string product, [Argument] string? component, bool? create) =>
+    if (product != null && create.HasValue != true && update == true)
+    {
+        ProductService.PutProductSettings(tenant, product, new ProductSettings()
+        {
+            IsAuthorizationEnabled = enableAuthorization!.Value,
+        });
+    }
+
+}).WithDescription("Create and read products").WithAliases("p");
+
+app.AddCommand("component", ([Argument()] string? component, string tenant, string product,
+    [Option(Description = "If his property is set, you will interact with product settings")] bool? settings,
+    [Option(Description = "Allow topic automatic creation from clients, default is 'true'")] bool? enableTopicCreation,
+    [Option(Description = "Allow subscription automatic creation from clients, default is 'true'")] bool? enableSubscriptionCreation,
+    [Option(Description = "Allow producers automatic creation from clients, default is 'true'")] bool? enableProducerCreation,
+    [Option(Description = "Enable Authorization, default is 'false'")] bool? enableAuthorization,
+    [Option(Description = "Enable Schema Validation for topics created in this component, default is 'false'")] bool? enableSchemaValidation,
+    [Option(Description = "Create or read Component, unset is read, set is create")] bool? create,
+    [Option(Description = "If this property is set it will update the product settings, make sure to update all settings you want to update")] bool? update) =>
 {
-    if (component == null)
+    if (component == null && settings.HasValue != true && create.HasValue != true && update.HasValue != true)
     {
         ComponentService.GetComponents(tenant, product);
         return;
     }
-    if (create == true)
+
+    if (component != null && create.HasValue != true && settings.HasValue != true && update.HasValue != true)
     {
-        Console.WriteLine("Create product not implemented");
+        ComponentService.GetComponent(tenant, product, component);
         return;
     }
 
-    ComponentService.GetComponent(tenant, product, component);
-}).WithDescription("Read and Create Components").WithAliases("c");
+    if (component != null && create.HasValue != true && settings == true && update.HasValue != true)
+    {
+        ComponentService.GetComponentSettings(tenant, product, component);
+        return;
+    }
 
-app.AddCommand("topic", (string tenant, string product, string component, [Argument] string? topic, bool? create) =>
+    // create or update
+    if (enableAuthorization.HasValue != true)
+        enableAuthorization = false;
+
+    if (enableTopicCreation.HasValue != true)
+        enableTopicCreation = true;
+
+    if (enableSubscriptionCreation.HasValue != true)
+        enableSubscriptionCreation = true;
+
+    if (enableProducerCreation.HasValue != true)
+        enableProducerCreation = true;
+
+    if (enableSchemaValidation.HasValue != true)
+        enableSchemaValidation = false;
+
+
+
+    if (component != null && create == true && update.HasValue != true)
+    {
+        ComponentService.PostComponent(tenant, product!, component!, new ComponentSettings()
+        {
+            IsAuthorizationEnabled = enableAuthorization!.Value,
+            IsTopicAutomaticCreationAllowed = enableTopicCreation.Value,
+            IsSubscriptionAutomaticCreationAllowed = enableSubscriptionCreation.Value,
+            IsSchemaValidationEnabled = enableSchemaValidation.Value,
+            IsProducerAutomaticCreationAllowed = enableProducerCreation.Value,
+        });
+    }
+
+    if (component != null && create.HasValue != true && update == true)
+    {
+        ComponentService.PutComponentSettings(tenant, product!, component!, new ComponentSettings()
+        {
+            IsAuthorizationEnabled = enableAuthorization!.Value,
+            IsTopicAutomaticCreationAllowed = enableTopicCreation.Value,
+            IsSubscriptionAutomaticCreationAllowed = enableSubscriptionCreation.Value,
+            IsSchemaValidationEnabled = enableSchemaValidation.Value
+        });
+    }
+
+}).WithDescription("Create and read components");
+
+app.AddCommand("topic", ([Argument()] string? topic, string tenant, string product, string component,
+    [Option(Description = "If his property is set, you will interact with product settings")] bool? settings,
+    [Option(Description = "Topic Settings, if this property is not set, the default values will be applied for this topic")] TopicSettings? topicSettings,
+    [Option(Description = "Create or read Topic, unset is read, set is create")] bool? create,
+    [Option(Description = "If this property is set it will update the product settings, make sure to update all settings you want to update")] bool? update) =>
 {
-    if (topic == null)
+    if (topic == null && settings.HasValue != true && create.HasValue != true && update.HasValue != true)
     {
         TopicService.GetTopics(tenant, product, component);
         return;
     }
-    if (create == true)
+
+    if (topic != null && create.HasValue != true && settings.HasValue != true && update.HasValue != true)
     {
-        Console.WriteLine("Create product not implemented");
+        TopicService.GetTopic(tenant, product, component, topic);
         return;
     }
 
-    TopicService.GetTopic(tenant, product, component, topic);
-}).WithDescription("Read and Create Topics");
+    if (topic != null && create.HasValue != true && settings == true && update.HasValue != true)
+    {
+        TopicService.GetTopicSettings(tenant, product, component, topic);
+        return;
+    }
 
-app.AddCommand("lineage", (string tenant, string? product, string? component, string? topic) =>
+    // create or update
+    topicSettings ??= new TopicSettings()
+    {
+        WriteBufferSizeInBytes = 64000000,
+        MaxWriteBufferNumber = 4,
+        MaxWriteBufferSizeToMaintain = 0,
+        MinWriteBufferNumberToMerge = 2,
+        MaxBackgroundCompactionsThreads = 1,
+        MaxBackgroundFlushesThreads = 1,
+    };
+
+    if (topic != null && create == true && update.HasValue != true)
+    {
+        TopicService.PostTopic(tenant, product, component, topic!, topicSettings);
+    }
+
+    if (topic != null && create.HasValue != true && update == true)
+    {
+        TopicService.PutTopicSettings(tenant, product, component, topic!, topicSettings);
+    }
+
+}).WithDescription("Create and read topics");
+
+app.AddCommand("subscription", ([Argument()] string? subscription, string tenant, string product, string component, string topic,
+    [Option(Description = "Subscription type, the default is 'Unique'")] SubscriptionType? type,
+    [Option(Description = "Subscription mode, the default value is 'NonResilient'")] SubscriptionMode? mode,
+    [Option(Description = "Initial Position for subscription, the default value is 'Latest'")] InitialPosition? initialPosition,
+    [Option(Description = "Create or read Subscription, unset is read, set is create")] bool? create) =>
 {
-    if (product != null && component != null && topic != null)
+    if (subscription == null && create.HasValue != true)
     {
-        StreamLineageService.GetStreamLineage(tenant, product, component, topic);
+        SubscriptionService.GetSubscriptions(tenant, product, component, topic);
         return;
     }
 
-    if (product != null && component != null)
+    if (subscription != null && create.HasValue != true)
     {
-        StreamLineageService.GetStreamLineage(tenant, product, component);
+        SubscriptionService.GetSubscription(tenant, product, component, topic, subscription);
         return;
     }
-    if (product != null)
-    {
-        StreamLineageService.GetStreamLineage(tenant, product);
-        return;
-    }
-    StreamLineageService.GetStreamLineage(tenant);
 
-}).WithDescription("Visualize Stream Lineage, show list of producers and consumers connected to topics");
+    type ??= SubscriptionType.Unique;
+    mode ??= SubscriptionMode.NonResilient;
+    initialPosition ??= InitialPosition.Latest;
+
+    if (topic != null && create == true)
+    {
+        SubscriptionService.PostSubscription(tenant, product, component, topic, subscription!, type.Value, mode.Value, initialPosition.Value);
+    }
+
+}).WithDescription("Create and read subscriptions");
+
+app.AddCommand("producer", ([Argument()] string? producer, string tenant, string product, string component, string topic,
+    [Option(Description = "Producer Description")] string? description,
+    [Option(Description = "Instance type, the default is 'Multiple'")] ProducerInstanceType? type,
+    [Option(Description = "Create or read Subscription, unset is read, set is create")] bool? create) =>
+{
+    if (producer == null && create.HasValue != true)
+    {
+        ProducerService.GetProducers(tenant, product, component, topic);
+        return;
+    }
+
+    if (producer != null && create.HasValue != true)
+    {
+        ProducerService.GetProducer(tenant, product, component, topic, producer);
+        return;
+    }
+
+    type ??= ProducerInstanceType.Multiple;
+    description ??= "created from andyx cli";
+
+
+    if (topic != null && create == true)
+    {
+        ProducerService.PostProducer(tenant, product, component, topic, producer!, description!, type.Value);
+    }
+
+}).WithDescription("Create and read producers");
+
+
+app.AddSubCommand("authorize", x =>
+{
+    x.AddCommand("tenant", (
+        string tenant,
+        [Argument()] Guid? key,
+        [Option(Description = "Token description")] string? description,
+        [Option(Description = "Roles, by default two roles will be asign Consume and Produce")] List<TenantTokenRole>? roles,
+        [Option(Description = "Expire date, date when the secret is valid, if is not set the default value is 2 years from this moment.")] DateTime? expireDate,
+        [Option(Description = "Create or read Tenant Tokens, unset is read, set is create")] bool? create,
+        [Option(Description = "Revoke the given key, key should have value to be able to revoke a key")] bool? revoke) =>
+    {
+
+        if (key.HasValue != true && create.HasValue != true && revoke.HasValue != true)
+        {
+            TenantTokenService.GetTenantTokens(tenant);
+            return;
+        }
+
+        if (key.HasValue == true && create.HasValue != true && revoke.HasValue != true)
+        {
+            TenantTokenService.GetTenantToken(tenant, key.Value);
+            return;
+        };
+
+        if (key.HasValue != true && create.HasValue == true && revoke.HasValue != true)
+        {
+            if (expireDate.HasValue != true)
+            {
+                expireDate = DateTime.UtcNow.AddYears(2);
+            }
+
+            description ??= "created by andyx cli";
+            roles ??= new List<TenantTokenRole>() { TenantTokenRole.Produce, TenantTokenRole.Consume };
+
+            var tenantToken = new TenantToken()
+            {
+                Description = description,
+                IsActive = true,
+                Roles = roles,
+                ExpireDate = expireDate.Value,
+                IssuedDate = DateTime.Now
+            };
+
+            TenantTokenService.PostTenantToken(tenant, tenantToken);
+            return;
+        };
+
+        if (key.HasValue == true && create.HasValue != true && revoke.HasValue == true)
+        {
+            TenantTokenService.RevokeTenantToken(tenant, key.Value);
+            return;
+        };
+
+        Console.WriteLine("Wrong combination");
+
+
+    }).WithDescription("Manage tenant keys");
+
+    x.AddCommand("product", (
+        string tenant, string product,
+        [Argument()] Guid? key,
+        [Option(Description = "Token description")] string? description,
+        [Option(Description = "Roles")] List<ProductTokenRole>? roles,
+        [Option(Description = "Expire date, date when the secret is valid, if is not set the default value is 2 years from this moment.")] DateTime? expireDate,
+        [Option(Description = "Create or read Product Tokens, unset is read, set is create")] bool? create,
+        [Option(Description = "Revoke the given key, key should have value to be able to revoke a key")] bool? revoke) =>
+    {
+        if (key.HasValue != true && create.HasValue != true && revoke.HasValue != true)
+        {
+            ProductTokenService.GetProductTokens(tenant, product);
+            return;
+        }
+
+        if (key.HasValue == true && create.HasValue != true && revoke.HasValue != true)
+        {
+            ProductTokenService.GetProductToken(tenant, product, key.Value);
+            return;
+        };
+
+        if (key.HasValue != true && create.HasValue == true && revoke.HasValue != true)
+        {
+            if (expireDate.HasValue != true)
+            {
+                expireDate = DateTime.UtcNow.AddYears(2);
+            }
+            description ??= "created by andyx cli";
+            roles ??= new List<ProductTokenRole>() { ProductTokenRole.Produce, ProductTokenRole.Consume };
+
+            var productToken = new ProductToken()
+            {
+                Description = description,
+                IsActive = true,
+                Roles = roles,
+                ExpireDate = expireDate.Value,
+                IssuedDate = DateTime.Now
+            };
+
+            ProductTokenService.PostProductToken(tenant, product, productToken);
+            return;
+        };
+
+        if (key.HasValue == true && create.HasValue != true && revoke.HasValue == true)
+        {
+            ProductTokenService.RevokeProductToken(tenant, product, key.Value);
+            return;
+        };
+
+        Console.WriteLine("Wrong combination");
+
+
+    }).WithDescription("Manage product keys");
+
+    x.AddCommand("component", (
+        string tenant, string product, string component,
+        [Argument()] Guid? key,
+        [Option(Description = "Enter the name of the client you would like to grant access (Producer or Subscription)")] string? issuedFor,
+        [Option(Description = "Token description")] string? description,
+        [Option(Description = "Roles")] List<ComponentTokenRole>? roles,
+        [Option(Description = "Expire date, date when the secret is valid, if is not set the default value is 2 years from this moment.")] DateTime? expireDate,
+        [Option(Description = "Create or read Component Tokens, unset is read, set is create")] bool? create,
+        [Option(Description = "Revoke the given key, key should have value to be able to revoke a key")] bool? revoke) =>
+    {
+        if (key.HasValue != true && create.HasValue != true && revoke.HasValue != true)
+        {
+            ComponentTokenService.GetComponentTokens(tenant, product, component);
+            return;
+        }
+
+        if (key.HasValue == true && create.HasValue != true && revoke.HasValue != true)
+        {
+            ComponentTokenService.GetComponentToken(tenant, product, component, key.Value);
+            return;
+        };
+
+        if (key.HasValue != true && create.HasValue == true && revoke.HasValue != true)
+        {
+            if (expireDate.HasValue != true)
+            {
+                expireDate = DateTime.UtcNow.AddYears(2);
+            }
+            description ??= "created by andyx cli";
+            roles ??= new List<ComponentTokenRole>() { ComponentTokenRole.Produce, ComponentTokenRole.Consume };
+
+            issuedFor ??= "";
+
+            var componentToken = new ComponentToken()
+            {
+                Description = description,
+                IsActive = true,
+                IssuedFor = issuedFor,
+                Roles = roles,
+                ExpireDate = expireDate.Value,
+                IssuedDate = DateTime.Now
+            };
+
+            ComponentTokenService.PostComponentToken(tenant, product, component, componentToken);
+            return;
+        };
+
+        if (key.HasValue == true && create.HasValue != true && revoke.HasValue == true)
+        {
+            ComponentTokenService.RevokeComponentToken(tenant, product, component, key.Value);
+            return;
+        };
+
+        Console.WriteLine("Wrong combination");
+
+    }).WithDescription("Manage component keys");
+
+
+}).WithDescription("Manage api keys and secrets for tenants, products and components");
 
 app.AddSubCommand("retention", x =>
 {
-    x.AddCommand("component", ([Option(Description = "Tenant name")] string tenant,
-        [Option(Description = "Product name")] string product,
-        [Argument(Description = "Component name")] string component,
-        [Option(Description = "Retention Policy Name, default is 'default'")] string? name,
-        [Option(Description = "Retention Time limit in minutes, default is -1, -1 is never")] long? time,
-        bool? create) =>
+    x.AddCommand("tenant", (
+        string tenant,
+        [Argument()] long? id,
+        [Option(Description = "Retention Policy Name, default is 'default_ttl'")] string? name,
+        [Option(Description = "Retention Policy Type, default is SOFT_TTL. In case of update type can not change")] RetentionType? type,
+        [Option(Description = "Time to live in minutes, default value is 43800 (one month)")] long? ttl,
+        [Option(Description = "Create a retention policy for tenant, unset is read, set is create")] bool? create,
+        [Option(Description = "update a retention policy for tenant with given id, set is update")] bool? update,
+        [Option(Description = "delete a retention policy for tenant with given id, set is delete")] bool? delete
+        ) =>
     {
-        if (create.HasValue == true)
+        if (id.HasValue != true && create.HasValue != true && update.HasValue != true && delete.HasValue != true)
+        {
+            TenantRetentionService.GetTenantRetentions(tenant);
+            return;
+        }
+
+        if (id.HasValue != true && create.HasValue == true && update.HasValue != true && delete.HasValue != true)
         {
             if (name == null)
-                name = "default";
-            if (time.HasValue != true)
-                time = -1;
+                name = "default_ttl";
+            if (type.HasValue != true)
+                type = RetentionType.SOFT_TTL;
+            if (ttl.HasValue != true)
+                ttl = 43800;
 
-            ComponentService.PostComponentRetention(tenant, product, component, new ComponentRetention()
+            var retention = new TenantRetention()
             {
                 Name = name,
-                RetentionTimeInMinutes = time.Value
-            });
+                TimeToLiveInMinutes = ttl.Value,
+                Type = type.Value
+            };
+
+            TenantRetentionService.PostTenantRetention(tenant, retention);
+            return;
         }
-        else
-            ComponentService.GetComponentRetention(tenant, product, component);
-    });
 
-}).WithDescription("Read and update Retention Periods for messages").WithAliases("auth");
+        if (id.HasValue == true && create.HasValue != true && update.HasValue == true && delete.HasValue != true)
+        {
+            if (name == null)
+                name = "default_ttl";
+            if (type.HasValue != true)
+                type = RetentionType.SOFT_TTL;
+            if (ttl.HasValue != true)
+                ttl = 43800;
+
+            var retention = new TenantRetention()
+            {
+                Name = name,
+                TimeToLiveInMinutes = ttl.Value,
+                Type = type.Value
+            };
+
+            TenantRetentionService.UpdateTenantRetention(tenant, id.Value, retention);
+            return;
+        }
+
+        if (id.HasValue == true && create.HasValue != true && update.HasValue != true && delete.HasValue == true)
+        {
+            TenantRetentionService.DeleteTenantRetention(tenant, id.Value);
+            return;
+        }
+
+        Console.WriteLine("Wrong combination");
+
+    }).WithDescription("Manage retention policies for tenant");
+
+    x.AddCommand("product", (
+        string tenant, string product,
+        [Argument()] long? id,
+        [Option(Description = "Retention Policy Name, default is 'default_ttl'")] string? name,
+        [Option(Description = "Retention Policy Type, default is SOFT_TTL. In case of update type can not change")] RetentionType? type,
+        [Option(Description = "Time to live in minutes, default value is 43800 (one month)")] long? ttl,
+        [Option(Description = "Create a retention policy for tenant, unset is read, set is create")] bool? create,
+        [Option(Description = "update a retention policy for tenant with given id, set is update")] bool? update,
+        [Option(Description = "delete a retention policy for tenant with given id, set is delete")] bool? delete
+        ) =>
+    {
+        if (id.HasValue != true && create.HasValue != true && update.HasValue != true && delete.HasValue != true)
+        {
+            ProductRetentionService.GetProductRetentions(tenant, product);
+            return;
+        }
+
+        if (id.HasValue != true && create.HasValue == true && update.HasValue != true && delete.HasValue != true)
+        {
+            if (name == null)
+                name = "default_ttl";
+            if (type.HasValue != true)
+                type = RetentionType.SOFT_TTL;
+            if (ttl.HasValue != true)
+                ttl = 43800;
+
+            var retention = new ProductRetention()
+            {
+                Name = name,
+                TimeToLiveInMinutes = ttl.Value,
+                Type = type.Value
+            };
+
+            ProductRetentionService.PostProductRetention(tenant, product, retention);
+            return;
+        }
+
+        if (id.HasValue == true && create.HasValue != true && update.HasValue == true && delete.HasValue != true)
+        {
+            if (name == null)
+                name = "default_ttl";
+            if (type.HasValue != true)
+                type = RetentionType.SOFT_TTL;
+            if (ttl.HasValue != true)
+                ttl = 43800;
+
+            var retention = new ProductRetention()
+            {
+                Name = name,
+                TimeToLiveInMinutes = ttl.Value,
+                Type = type.Value
+            };
+
+            ProductRetentionService.UpdateProductRetention(tenant, product, id.Value, retention);
+            return;
+        }
+
+        if (id.HasValue == true && create.HasValue != true && update.HasValue != true && delete.HasValue == true)
+        {
+            ProductRetentionService.DeleteProductRetention(tenant, product, id.Value);
+            return;
+        }
+
+        Console.WriteLine("Wrong combination");
+
+    }).WithDescription("Manage retention policies for product");
+
+    x.AddCommand("component", (
+        string tenant, string product, string component,
+        [Argument()] long? id,
+        [Option(Description = "Retention Policy Name, default is 'default_ttl'")] string? name,
+        [Option(Description = "Retention Policy Type, default is SOFT_TTL. In case of update type can not change")] RetentionType? type,
+        [Option(Description = "Time to live in minutes, default value is 43800 (one month)")] long? ttl,
+        [Option(Description = "Create a retention policy for tenant, unset is read, set is create")] bool? create,
+        [Option(Description = "update a retention policy for tenant with given id, set is update")] bool? update,
+        [Option(Description = "delete a retention policy for tenant with given id, set is delete")] bool? delete
+        ) =>
+    {
+        if (id.HasValue != true && create.HasValue != true && update.HasValue != true && delete.HasValue != true)
+        {
+            ComponentRetentionService.GetComponentRetentions(tenant, product, component);
+            return;
+        }
+
+        if (id.HasValue != true && create.HasValue == true && update.HasValue != true && delete.HasValue != true)
+        {
+            if (name == null)
+                name = "default_ttl";
+            if (type.HasValue != true)
+                type = RetentionType.SOFT_TTL;
+            if (ttl.HasValue != true)
+                ttl = 43800;
+
+            var retention = new ComponentRetention()
+            {
+                Name = name,
+                TimeToLiveInMinutes = ttl.Value,
+                Type = type.Value
+            };
+
+            ComponentRetentionService.PostComponentRetention(tenant, product, component, retention);
+            return;
+        }
+
+        if (id.HasValue == true && create.HasValue != true && update.HasValue == true && delete.HasValue != true)
+        {
+            if (name == null)
+                name = "default_ttl";
+            if (type.HasValue != true)
+                type = RetentionType.SOFT_TTL;
+            if (ttl.HasValue != true)
+                ttl = 43800;
+
+            var retention = new ComponentRetention()
+            {
+                Name = name,
+                TimeToLiveInMinutes = ttl.Value,
+                Type = type.Value
+            };
+
+            ComponentRetentionService.UpdateComponentRetention(tenant, product, component, id.Value, retention);
+            return;
+        }
+
+        if (id.HasValue == true && create.HasValue != true && update.HasValue != true && delete.HasValue == true)
+        {
+            ComponentRetentionService.DeleteComponentRetention(tenant, product, component, id.Value);
+            return;
+        }
+
+        Console.WriteLine("Wrong combination");
+
+    }).WithDescription("Manage retention policies for component");
 
 
-
-
-app.AddCommand("consumer", ([Argument()] string? consumer, bool stats) =>
-{
-    if (consumer == null)
-        ConsumerService.GetConsumers();
-    if (stats == true)
-        ConsumerService.GetConsumerStats(consumer);
-    else
-        ConsumerService.GetConsumer(consumer);
-
-}).WithDescription("Read Consumers details");
-
-app.AddCommand("producer", ([Argument()] string? producer, bool stats) =>
-{
-    if (producer == null)
-        ProducerService.GetProducers();
-
-    if (stats == true)
-        ProducerService.GetProducerStats(producer);
-    else
-        ProducerService.GetProducer(producer);
-}).WithDescription("Read Producers details");
-
-
-
-
-
-app.AddCommand("build", ([Argument] string app) =>
-{
-    Console.WriteLine("not implemented");
-}).WithDescription("Build Andy X Extensions and Plugins");
-
-app.AddCommand("restore", ([Argument] string app) =>
-{
-    Console.WriteLine("not implemented");
-}).WithDescription("Restore Andy X Extensions and Plugins");
-
-
-app.AddCommand("pack", ([Argument] string app, string outputLocation) =>
-{
-    Console.WriteLine("not implemented");
-}).WithDescription("Pack Andy X Extensions and Plugins");
-
-app.AddCommand("push", ([Argument] string app, [Argument] string outputLocation, string? apiKey) =>
-{
-    Console.WriteLine(app);
-    Console.WriteLine("Push");
-}).WithDescription("Push Andy X Extensions and Plugins to Andy X Hub");
+}).WithDescription("Manage life time of data at tenants, products and components");
 
 app.Run();
