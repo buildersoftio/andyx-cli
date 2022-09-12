@@ -1,19 +1,22 @@
-﻿using Andy.X.Cli.Utilities;
+﻿using Andy.X.Cli.Models.Subscriptions;
+using Andy.X.Cli.Utilities;
 using Andy.X.Cli.Utilities.Extensions;
-using Buildersoft.Andy.X.Model.Entities.Core.Producers;
+using Buildersoft.Andy.X.Model.Entities.Core.Subscriptions;
+using Buildersoft.Andy.X.Model.Entities.Core.Topics;
 using ConsoleTables;
 using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace Andy.X.Cli.Services
 {
-    public static class ProducerService
+    public static class SubscriptionService
     {
-        public static void GetProducers(string tenant, string product, string component, string topic)
+        public static void GetSubscriptions(string tenant, string product, string component, string topic)
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/topics/{topic}/producers";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/topics/{topic}/subscriptions";
             try
             {
                 HttpClient client = new HttpClient();
@@ -24,12 +27,12 @@ namespace Andy.X.Cli.Services
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "PRODUCER_NAME");
-                    List<string> list = JsonConvert.DeserializeObject<List<string>>(content)!;
+                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "TOPIC", "SUBSCRIPTION_NAME", "SUBSCRIPTION_TYPE");
+                    List<SubscriptionName> list = JsonConvert.DeserializeObject<List<SubscriptionName>>(content)!;
 
                     foreach (var item in list)
                     {
-                        table.AddRow(tenant, product, component, topic, item);
+                        table.AddRow(tenant, product, component, topic, item.Name, item.Type.ToString());
                     }
                     table.Write();
                 }
@@ -43,11 +46,11 @@ namespace Andy.X.Cli.Services
             }
 
         }
-        public static void GetProducer(string tenant, string product, string component, string topic, string producer)
+        public static void GetSubscription(string tenant, string product, string component, string topic, string subscription)
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/topics/{topic}/producers/{producer}";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/topics/{topic}/subscriptions/{subscription}";
             try
             {
                 HttpClient client = new HttpClient();
@@ -58,14 +61,14 @@ namespace Andy.X.Cli.Services
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("ID", "NAME", "DESCRIPTION", "INSTANCE_TYPE", "PUBLIC_IP_RANGE", "PRIVATE_IP_RANGE", "UPDATED_DATE", "CREATED_DATE", "UPDATED_BY", "CREATED_BY");
+                    var table = new ConsoleTable("ID", "NAME", "TYPE", "MODE", "INITIAL_POSITION", "PUBLIC_IP_RANGE", "PRIVATE_IP_RANGE" ,"UPDATED_DATE", "CREATED_DATE", "UPDATED_BY", "CREATED_BY");
 
-                    var producerDetails = JsonConvert.DeserializeObject<Producer>(content);
-                    table.AddRow(producerDetails!.Id, producerDetails.Name, producerDetails.Description,
-                        producerDetails.InstanceType.ToString(),
-                        string.Join(",", producerDetails.PublicIpRange),
-                        string.Join(",", producerDetails.PrivateIpRange),
-                        producerDetails.UpdatedDate, producerDetails.CreatedDate, producerDetails.UpdatedBy, producerDetails.CreatedBy);
+                    var topicDetails = JsonConvert.DeserializeObject<Subscription>(content);
+                    table.AddRow(topicDetails!.Id, topicDetails.Name, topicDetails.SubscriptionType.ToString(), 
+                        topicDetails.SubscriptionMode.ToString(), topicDetails.InitialPosition.ToString(), 
+                        string.Join(",", topicDetails.PublicIpRange),
+                        string.Join(",", topicDetails.PrivateIpRange),
+                        topicDetails.UpdatedDate, topicDetails.CreatedDate, topicDetails.UpdatedBy, topicDetails.CreatedBy);
                     table.Write();
                 }
                 else
@@ -86,17 +89,18 @@ namespace Andy.X.Cli.Services
 
         }
 
-        public static void PostProducer(string tenant, string product, string component, string topic, string producer, string description, ProducerInstanceType producerInstanceType)
+        public static void PostSubscription(string tenant, string product, string component, string topic, string subscription, SubscriptionType subscriptionType, SubscriptionMode subscriptionMode, InitialPosition initialPosition)
         {
             var node = NodeService.GetNode();
 
             var query = new Dictionary<string, string>
             {
-                ["description"] = description,
-                ["instanceType"] = producerInstanceType.ToString(),
+                ["subscriptionType"] = subscriptionType.ToString(),
+                ["subscriptionMode"] = subscriptionMode.ToString(),
+                ["initialPosition"] = initialPosition.ToString()
             };
 
-            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/topics/{topic}/producers/{producer}";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/topics/{topic}/subscriptions/{subscription}";
             var stringUri = QueryHelpers.AddQueryString(request, query);
 
             try
@@ -110,7 +114,7 @@ namespace Andy.X.Cli.Services
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     Console.WriteLine("");
-                    Console.WriteLine($"Producer '{producer}' at '{tenant}/{product}/{component}/{topic}' has been created succesfully!");
+                    Console.WriteLine($"Subscription '{subscription}' at '{tenant}/{product}/{component}/{topic}' has been created succesfully!");
                     Console.WriteLine($"-----------------------------------------------------------------------");
                     Console.WriteLine("");
                 }
@@ -129,6 +133,8 @@ namespace Andy.X.Cli.Services
                 table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
                 table.Write();
             }
+
         }
+
     }
 }

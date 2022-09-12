@@ -1,6 +1,6 @@
-﻿using Andy.X.Cli.Models;
-using Andy.X.Cli.Models.Configurations;
+﻿using Andy.X.Cli.Utilities;
 using Andy.X.Cli.Utilities.Extensions;
+using Buildersoft.Andy.X.Model.Entities.Core.Components;
 using ConsoleTables;
 using Newtonsoft.Json;
 using System.Text;
@@ -13,56 +13,55 @@ namespace Andy.X.Cli.Services
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components";
             try
             {
                 HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-called-by", ApplicationParameters.ApplicationName);
                 client.AddBasicAuthorizationHeader(node);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("ID", "COMPONENT_NAME");
-                    List<Component> listResult = JsonConvert.DeserializeObject<List<Component>>(content);
+                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT");
+                    List<string> list = JsonConvert.DeserializeObject<List<string>>(content)!;
 
-                    int k = 0;
-                    foreach (var item in listResult)
+                    foreach (var item in list)
                     {
-                        k++;
-                        table.AddRow(item.Id, item.Name);
+                        table.AddRow(tenant, product, item);
                     }
                     table.Write();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 var table = new ConsoleTable("STATUS", "ERROR");
 
-                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.AddRow("NOT_CONNECTED", $"It can not connect to the node, check network connectivity, {ex.Message}");
                 table.Write();
             }
-        }
 
+        }
         public static void GetComponent(string tenant, string product, string component)
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}";
             try
             {
                 HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-called-by", ApplicationParameters.ApplicationName);
                 client.AddBasicAuthorizationHeader(node);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("ID", "COMPONENT_NAME", "TOPICS", "ALLOW_SCHEMA_VALIDATION", "ALLOW_TOPIC_CREATION", "ENABLE_AUTHORIZATION", "TOKENS");
-                    var productDetail = JsonConvert.DeserializeObject<Component>(content);
-                    table.AddRow(productDetail.Id, productDetail.Name, productDetail.Topics.Count, productDetail.Settings.AllowSchemaValidation, productDetail.Settings.AllowTopicCreation, productDetail.Settings.EnableAuthorization, productDetail.Settings.Tokens.Count);
+                    var table = new ConsoleTable("ID", "COMPONENT_NAME", "DESCRIPTION", "UPDATED_DATE", "CREATED_DATE", "UPDATED_BY", "CREATED_BY");
+
+                    var componentDetail = JsonConvert.DeserializeObject<Component>(content);
+                    table.AddRow(componentDetail.Id, componentDetail.Name, componentDetail.Description, componentDetail.UpdatedDate, componentDetail.CreatedDate, componentDetail.UpdatedBy, componentDetail.CreatedBy);
                     table.Write();
                 }
                 else
@@ -82,31 +81,36 @@ namespace Andy.X.Cli.Services
             }
 
         }
-
-        public static void GetComponentTokens(string tenant, string product, string component)
+        public static void GetComponentSettings(string tenant, string product, string component)
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/tokens";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/settings";
             try
             {
                 HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-called-by", ApplicationParameters.ApplicationName);
                 client.AddBasicAuthorizationHeader(node);
 
                 HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var table = new ConsoleTable("ID", "NAME", "DESCRIPTION", "TOKEN", "IS_ACTIVE", "CAN_CONSUME", "CAN_PRODUCE", "EXPIRE_DATE", "ISSUED_FOR", "ISSUED_DATE");
-                    List<ComponentToken> listResult = JsonConvert.DeserializeObject<List<ComponentToken>>(content);
+                    var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "KEY", "VALUE");
+                    var componentSettings = JsonConvert.DeserializeObject<ComponentSettings>(content);
+                    table.AddRow(tenant, product, component, "IsTopicAutomaticCreationAllowed", componentSettings!.IsTopicAutomaticCreationAllowed);
+                    table.AddRow(tenant, product, component, "IsSchemaValidationEnabled", componentSettings.IsSchemaValidationEnabled);
+                    table.AddRow(tenant, product, component, "IsSubscriptionAutomaticCreationAllowed", componentSettings.IsSubscriptionAutomaticCreationAllowed);
+                    table.AddRow(tenant, product, component, "IsProducerAutomaticCreationAllowed", componentSettings.IsProducerAutomaticCreationAllowed);
+                    table.AddRow(tenant, product, component, "IsAuthorizationEnabled", componentSettings.IsAuthorizationEnabled);
 
-                    int k = 0;
-                    foreach (var item in listResult)
-                    {
-                        k++;
-                        table.AddRow(k, item.Name, item.Description, item.Token, item.IsActive, item.CanConsume, item.CanProduce, item.ExpireDate, item.IssuedFor, item.IssuedDate);
-                    }
+                    table.Write();
+                }
+                else
+                {
+                    var table = new ConsoleTable("STATUS", "ERROR");
+
+                    table.AddRow(httpResponseMessage.StatusCode, content);
                     table.Write();
                 }
             }
@@ -118,19 +122,18 @@ namespace Andy.X.Cli.Services
                 table.Write();
             }
         }
-
-        public static void PostComponentToken(string tenant, string product, string component, ComponentToken componentToken)
+        public static void PostComponent(string tenant, string product, string component, ComponentSettings componentSettings)
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/tokens";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}";
             try
             {
                 HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-called-by", ApplicationParameters.ApplicationName);
                 client.AddBasicAuthorizationHeader(node);
 
-                var settings = JsonConvert.SerializeObject(componentToken);
+                var settings = JsonConvert.SerializeObject(componentSettings);
                 var bodyRequest = new StringContent(settings, Encoding.UTF8, "application/json");
 
                 HttpResponseMessage httpResponseMessage = client.PostAsync(request, bodyRequest).Result;
@@ -138,7 +141,7 @@ namespace Andy.X.Cli.Services
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     Console.WriteLine("");
-                    Console.WriteLine($"{content}");
+                    Console.WriteLine($"Component '{component}' at '{tenant}/{product}' has been created succesfully!");
                     Console.WriteLine($"-----------------------------------------------------------------------");
                     Console.WriteLine("");
                 }
@@ -157,64 +160,28 @@ namespace Andy.X.Cli.Services
                 table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
                 table.Write();
             }
+
         }
-
-        public static void DeleteComponentToken(string tenant, string product, string component, string token)
-        {
-            var node = NodeService.GetNode();
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/tokens/{token}/revoke";
-
-            try
-            {
-                HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
-                client.AddBasicAuthorizationHeader(node);
-
-                HttpResponseMessage httpResponseMessage = client.DeleteAsync(request).Result;
-                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
-                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    var table = new ConsoleTable("ID", "TENANT", "PRODUCT", "COMPONENT", "TOKEN", "RESULT");
-                    //List<string> list = content.JsonToObject<List<string>>();
-                    table.AddRow("1", tenant, product, component, token, content);
-                    table.Write();
-                }
-                else
-                {
-                    var table = new ConsoleTable("ID", "RESULT");
-                    table.AddRow("1", content);
-                    table.Write();
-                }
-            }
-            catch (Exception)
-            {
-                var table = new ConsoleTable("STATUS", "ERROR");
-
-                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
-                table.Write();
-            }
-        }
-
-        public static void PostComponentRetention(string tenant, string product, string component, ComponentRetention retention)
+        public static void PutComponentSettings(string tenant, string product, string component, ComponentSettings componentSettings)
         {
             var node = NodeService.GetNode();
 
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/retention";
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenant}/products/{product}/components/{component}/settings";
             try
             {
                 HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
+                client.DefaultRequestHeaders.Add("x-called-by", ApplicationParameters.ApplicationName);
                 client.AddBasicAuthorizationHeader(node);
 
-                var settings = JsonConvert.SerializeObject(retention);
+                var settings = JsonConvert.SerializeObject(componentSettings);
                 var bodyRequest = new StringContent(settings, Encoding.UTF8, "application/json");
 
-                HttpResponseMessage httpResponseMessage = client.PostAsync(request, bodyRequest).Result;
+                HttpResponseMessage httpResponseMessage = client.PutAsync(request, bodyRequest).Result;
                 string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     Console.WriteLine("");
-                    Console.WriteLine($"{content}");
+                    Console.WriteLine($"Settings have been updated, '{component}' is marked to refresh settings, this may take a while!");
                     Console.WriteLine($"-----------------------------------------------------------------------");
                     Console.WriteLine("");
                 }
@@ -233,38 +200,7 @@ namespace Andy.X.Cli.Services
                 table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
                 table.Write();
             }
+
         }
-
-        public static void GetComponentRetention(string tenant, string product, string component)
-        {
-            var node = NodeService.GetNode();
-
-            string request = $"{node.NodeUrl}api/v1/tenants/{tenant}/products/{product}/components/{component}/retention";
-            try
-            {
-                HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Add("x-called-by", $"Andy X Cli");
-                client.AddBasicAuthorizationHeader(node);
-
-                HttpResponseMessage httpResponseMessage = client.GetAsync(request).Result;
-                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
-                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    var table = new ConsoleTable("ID", "NAME", "RETENTION_TIME_IN_MINUTES", "STATUS");
-                    var result = JsonConvert.DeserializeObject<ComponentRetention>(content);
-
-                    table.AddRow("1", result.Name, result.RetentionTimeInMinutes, "ACTIVE");
-                    table.Write();
-                }
-            }
-            catch (Exception)
-            {
-                var table = new ConsoleTable("STATUS", "ERROR");
-
-                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
-                table.Write();
-            }
-        }
-
     }
 }
