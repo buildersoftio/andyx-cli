@@ -122,7 +122,7 @@ namespace Andy.X.Cli.Services
             }
         }
 
-        public static void PostProduct(string tenant, string product,ProductSettings productSettings)
+        public static void PostProduct(string tenant, string product, ProductSettings productSettings)
         {
             var node = NodeService.GetNode();
 

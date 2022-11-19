@@ -1,5 +1,4 @@
-﻿using Andy.X.Cli.Models.Configurations;
-using Andy.X.Cli.Services;
+﻿using Andy.X.Cli.Services;
 using Buildersoft.Andy.X.Model.Entities.Core.Components;
 using Buildersoft.Andy.X.Model.Entities.Core.Producers;
 using Buildersoft.Andy.X.Model.Entities.Core.Products;
@@ -8,8 +7,6 @@ using Buildersoft.Andy.X.Model.Entities.Core.Tenants;
 using Buildersoft.Andy.X.Model.Entities.Core.Topics;
 using Cocona;
 using ConsoleTables;
-using Microsoft.Extensions.Hosting;
-using System.Diagnostics;
 
 var builder = CoconaApp.CreateBuilder(configureOptions: options =>
 {
@@ -229,7 +226,8 @@ app.AddCommand("component", ([Argument()] string? component, string tenant, stri
             IsAuthorizationEnabled = enableAuthorization!.Value,
             IsTopicAutomaticCreationAllowed = enableTopicCreation.Value,
             IsSubscriptionAutomaticCreationAllowed = enableSubscriptionCreation.Value,
-            EnforceSchemaValidation = enforceSchemaValidation.Value
+            EnforceSchemaValidation = enforceSchemaValidation.Value,
+            IsProducerAutomaticCreationAllowed = enableProducerCreation.Value
         });
     }
 
@@ -717,5 +715,14 @@ app.AddSubCommand("retention", x =>
 
 
 }).WithDescription("Manage life time of data at tenants, products and components");
+
+
+app.AddCommand("cluster", () =>
+{
+
+    ClusterService.GetClusterConfiguration();
+
+}).WithDescription("Read Cluster configuration");
+
 
 app.Run();
