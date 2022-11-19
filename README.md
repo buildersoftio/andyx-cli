@@ -1,3 +1,5 @@
+<img src="src/Andy.X.Cli/Assets/andyx-logo.png" style="display: block; margin-left: auto; margin-right: auto; margin-bottom: 50px;margin-top: 50px;" alt="Andy X Logo" width="300"/> 
+
 What is Andy X Cli?
 ============
 Andy X is an open-source distributed streaming platform designed to deliver the best performance possible for high-performance data pipelines, streaming analytics, streaming between microservices and data integrations.
@@ -16,13 +18,13 @@ and make pull-requests.
 
 ## Reporting security issues and bugs
 
-Security issues and bugs should be reported privately, via email, en.buildersoft@gmail.com. You should receive a response within 24 hours.
+Security issues and bugs should be reported privately, via email, support@buildersoft.io. You should receive a response within 24 hours.
 
 ## Related projects
 
 These are some other repos for related projects:
 
-* [Andy X Terminal](https://github.com/buildersoftdev/andyxterminal) - Manage all resources of Andy X
+* [Andy X](https://github.com/buildersoftdev/andyx) - Andy X Source code.
 
 ## Deploying Andy X with docker-compose
 
