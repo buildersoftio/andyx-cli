@@ -99,7 +99,7 @@ namespace Andy.X.Cli.Services
                     var table = new ConsoleTable("TENANT", "PRODUCT", "COMPONENT", "KEY", "VALUE");
                     var componentSettings = JsonConvert.DeserializeObject<ComponentSettings>(content);
                     table.AddRow(tenant, product, component, "IsTopicAutomaticCreationAllowed", componentSettings!.IsTopicAutomaticCreationAllowed);
-                    table.AddRow(tenant, product, component, "IsSchemaValidationEnabled", componentSettings.IsSchemaValidationEnabled);
+                    table.AddRow(tenant, product, component, "EnforceSchemaValidation", componentSettings.EnforceSchemaValidation);
                     table.AddRow(tenant, product, component, "IsSubscriptionAutomaticCreationAllowed", componentSettings.IsSubscriptionAutomaticCreationAllowed);
                     table.AddRow(tenant, product, component, "IsProducerAutomaticCreationAllowed", componentSettings.IsProducerAutomaticCreationAllowed);
                     table.AddRow(tenant, product, component, "IsAuthorizationEnabled", componentSettings.IsAuthorizationEnabled);

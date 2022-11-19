@@ -5,7 +5,6 @@
         public long Id { get; set; }
 
         public string Name { get; set; }
-
         public SubscriptionType SubscriptionType { get; set; }
         public SubscriptionMode SubscriptionMode { get; set; }
         public InitialPosition InitialPosition { get; set; }

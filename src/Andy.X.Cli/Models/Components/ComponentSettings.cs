@@ -3,7 +3,7 @@
     public class ComponentSettings
     {
         public bool IsTopicAutomaticCreationAllowed { get; set; }
-        public bool IsSchemaValidationEnabled { get; set; }
+        public bool EnforceSchemaValidation { get; set; }
         public bool IsAuthorizationEnabled { get; set; }
 
         public bool IsSubscriptionAutomaticCreationAllowed { get; set; }
