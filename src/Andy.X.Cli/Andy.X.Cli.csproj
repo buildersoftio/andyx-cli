@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFrameworks>net7.0;net6.0</TargetFrameworks>
 		<Company>Buildersoft</Company>
 		<Product>Buildersoft Andy</Product>
 		<Authors>Buildersoft</Authors>
@@ -24,6 +24,7 @@
 		<Version>3.0.0</Version>
 		<PackageProjectUrl>https://buildersoftdev.azurewebsites.net/andyx</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/buildersoftdev/andyx-cli</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 
 	</PropertyGroup>
 
@@ -46,7 +47,19 @@
 
 
 	<ItemGroup>
+		<None Include="..\..\README.md">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
+		</None>
 		<None Include="Assets\andyX.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="Assets\andyx-logo.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="Assets\buildersoft-05.png">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>

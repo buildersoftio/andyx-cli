@@ -1,4 +1,4 @@
-<img src="src/Andy.X.Cli/Assets/andyx-logo.png" style="display: block; margin-left: auto; margin-right: auto; margin-bottom: 50px;margin-top: 50px;" alt="Andy X Logo" width="300"/> 
+![Andy X Logo](src/Andy.X.Cli/Assets/andyx-logo.png)
 
 What is Andy X Cli?
 ============
