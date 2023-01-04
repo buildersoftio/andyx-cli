@@ -55,6 +55,47 @@ app.AddSubCommand("node", x =>
     }).WithDescription("Read node details");
 }).WithDescription("Connect and read node details");
 
+app.AddSubCommand("schemahub", x =>
+{
+    x.AddCommand("connect", (
+        [Option(Description = "Url of Andy X SchemaHub, default value is 'https://localhost:6331'")] string url,
+        [Option('u', Description = "Username of Andy X SchemaHub, default is 'admin'")] string? username,
+        [Option('p', Description = "Password of Andy X SchemaHub, default is 'admin'")] string? password) =>
+    {
+
+        username ??= "admin";
+        password ??= "admin";
+
+        var isConnected = SchemaHubService.AddSchemaHub(url, username, password);
+        if (isConnected)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"SchemaHub '{url}' is registered");
+
+            var table = new ConsoleTable("ID", "SCHEMAHUB_URL", "USERNAME", "PASSWORD");
+            var node = SchemaHubService.GetSchemaHub();
+            table.AddRow(1, node.NodeUrl, node.Username, node.Password);
+            table.Write();
+        }
+        else
+        {
+            Console.WriteLine();
+            Console.WriteLine($"Something went wrong! SchemaHub '{url}' is not registered.");
+        }
+
+    }).WithDescription("Connect to a node");
+
+    x.AddCommand("show", () =>
+    {
+        var table = new ConsoleTable("ID", "SCHEMAHUB_URL", "USERNAME", "PASSWORD");
+        var node = SchemaHubService.GetSchemaHub();
+        table.AddRow(1, node.NodeUrl, node.Username, "**********");
+        table.Write();
+
+    }).WithDescription("Read node details");
+}).WithDescription("Connect and read schemahub details");
+
+
 app.AddCommand("tenant", ([Argument()] string? tenant,
     [Option(Description = "If his property is set, you will interact with tenant settings")] bool? settings,
     [Option(Description = "Allow product automatic creation from clients, default is 'true'")] bool? allowProductCreation,

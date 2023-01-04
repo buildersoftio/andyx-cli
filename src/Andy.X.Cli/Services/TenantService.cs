@@ -211,5 +211,43 @@ namespace Andy.X.Cli.Services
             }
 
         }
+
+
+        private static void PostTenantInSchemaHub(string tenantName)
+        {
+            var node = SchemaHubService.GetSchemaHub();
+
+            string request = $"{node.NodeUrl}api/v3/tenants/{tenantName}";
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Add("x-called-by", ApplicationParameters.ApplicationName);
+                client.AddBasicAuthorizationHeader(node);
+
+                HttpResponseMessage httpResponseMessage = client.PostAsync(request, null).Result;
+                string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine($"Tenant '{tenantName}' has been created succesfully in SchemaHub!");
+                    Console.WriteLine($"-----------------------------------------------------------------------");
+                    Console.WriteLine("");
+                }
+                else
+                {
+                    var table = new ConsoleTable("STATUS", "ERROR");
+
+                    table.AddRow(httpResponseMessage.StatusCode, content);
+                    table.Write();
+                }
+            }
+            catch (Exception)
+            {
+                var table = new ConsoleTable("STATUS", "ERROR");
+
+                table.AddRow("NOT_CONNECTED", "It can not connect to the node, check network connectivity");
+                table.Write();
+            }
+        }
     }
 }

@@ -15,7 +15,12 @@
 
         public static string GetNodeConfigurationFile()
         {
-            return Path.Combine(ConfigDirectory(), "node.json");
+            return Path.Combine(ConfigDirectory(), "node-connection.json");
+        }
+
+        public static string GetSchemaConfigurationFile()
+        {
+            return Path.Combine(ConfigDirectory(), "schemahub-connection.json");
         }
 
         public static string GetTenantsConfigurationFile()
